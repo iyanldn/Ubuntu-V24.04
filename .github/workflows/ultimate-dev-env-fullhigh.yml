@@ -39,12 +39,7 @@ jobs:
           sudo apt install -y \
             nginx mariadb-server redis-server postgresql
 
-      - name: 🐳 Install Docker & Compose
-        run: |
-          sudo apt install -y docker.io docker-compose-plugin
-          sudo systemctl enable docker
-          sudo systemctl start docker || true
-
+      
       - name: 📦 Install Python AI/ML Libraries
         run: |
           pip install --upgrade pip
