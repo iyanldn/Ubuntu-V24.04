@@ -7,7 +7,7 @@ on:
       - 'v24.04-arm64'
 
 permissions:
-  contents: write  # WAJIB agar bisa upload ke GitHub Release
+  contents: write
 
 jobs:
   ultimate-dev-setup:
@@ -20,36 +20,36 @@ jobs:
 
       - name: 🔄 Update & Upgrade
         run: |
-          sudo apt update && sudo apt upgrade -y
+          sudo apt-get update && sudo apt-get upgrade -y
 
       - name: 🛠️ Install CLI + Build Tools
         run: |
-          sudo apt install -y \
+          sudo apt-get install -y \
             git curl wget unzip zip neovim tmux build-essential \
             make cmake gcc g++ zsh jq htop tree net-tools file gnupg
 
       - name: 🔣 Install Language Runtimes
         run: |
-          sudo apt install -y \
+          sudo apt-get install -y \
             python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
 
       - name: 🌐 Install Web Stack (tanpa MongoDB)
         run: |
-          sudo apt install -y \
+          sudo apt-get install -y \
             nginx mariadb-server redis-server postgresql
 
       - name: 🐳 Install Docker & Compose (Fix Ubuntu 24.04)
         run: |
-          sudo apt update
-          sudo apt install -y ca-certificates curl gnupg
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl gnupg
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           echo \
             "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
             $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
             sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt update
-          sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           sudo systemctl enable docker
           sudo systemctl start docker || true
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: 🛡️ Install Security Tools
         run: |
-          sudo apt install -y \
+          sudo apt-get install -y \
             ufw nmap netcat-openbsd openssh-client fail2ban lynis whois dnsutils
 
       - name: 🔐 Enable UFW Firewall
