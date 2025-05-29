@@ -1,0 +1,127 @@
+name: Ultimate Dev Environment - Ubuntu 24.04 FULL
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v24.04-arm64'
+
+permissions:
+  contents: write  # WAJIB agar bisa upload ke GitHub Release
+
+jobs:
+  ultimate-dev-setup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40  # Durasi maksimal (karena backup besar)
+
+    steps:
+      - name: ✅ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🔄 Update & Upgrade
+        run: |
+          sudo apt update && sudo apt upgrade -y
+
+      - name: 🛠️ Install CLI + Build Tools
+        run: |
+          sudo apt install -y \
+            git curl wget unzip zip neovim tmux build-essential \
+            make cmake gcc g++ zsh jq htop tree net-tools file gnupg
+
+      - name: 🔣 Install Language Runtimes
+        run: |
+          sudo apt install -y \
+            python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+
+      - name: 🌐 Install Web Stack (tanpa MongoDB)
+        run: |
+          sudo apt install -y \
+            nginx mariadb-server redis-server postgresql
+
+      - name: 🐳 Install Docker & Compose
+        run: |
+          sudo apt install -y docker.io docker-compose
+          sudo systemctl enable docker
+          sudo systemctl start docker || true
+
+      - name: 📦 Install Python AI/ML Libraries
+        run: |
+          pip install --upgrade pip
+          pip install \
+            numpy pandas matplotlib scikit-learn \
+            jupyter seaborn opencv-python \
+            transformers torch torchvision
+
+      - name: 🛡️ Install Security Tools
+        run: |
+          sudo apt install -y \
+            ufw nmap netcat openssh-client fail2ban lynis whois dnsutils
+
+      - name: 🔐 Enable UFW Firewall
+        run: |
+          sudo ufw allow OpenSSH
+          sudo ufw allow 80
+          sudo ufw allow 443
+          sudo ufw --force enable
+
+      - name: 📋 Show Installed Versions
+        run: |
+          echo "--- INSTALLED VERSIONS ---"
+          git --version
+          node -v
+          npm -v
+          python3 --version
+          go version
+          java -version
+          docker --version
+          docker-compose --version
+          nginx -v
+          mariadb --version
+          redis-server --version
+          psql --version
+          nmap --version | head -n 1
+
+      - name: 🗜️ Compress Full Dev Environment
+        run: |
+          mkdir -p full-dev-snapshot
+
+          # Configs
+          cp -r ~/.config full-dev-snapshot/config || true
+          cp -r ~/.local full-dev-snapshot/local || true
+          cp -r ~/.npm full-dev-snapshot/npm || true
+          cp -r ~/.cache full-dev-snapshot/cache || true
+
+          # Neovim + build tools
+          sudo cp -r /usr/local full-dev-snapshot/usr-local || true
+
+          # NodeJS global modules
+          sudo cp -r /usr/lib/node_modules full-dev-snapshot/node-modules || true
+
+          # Python global libs
+          PY_VER=$(python3 -c 'import sys; print("python{}.{}".format(sys.version_info[0], sys.version_info[1]))')
+          sudo cp -r /usr/lib/$PY_VER full-dev-snapshot/python || true
+
+          # Basic system configs
+          mkdir -p full-dev-snapshot/etc
+          sudo cp /etc/{hosts,hostname,passwd,group,sudoers} full-dev-snapshot/etc/ || true
+
+          # Final archive
+          sudo tar -czf ubuntu24-full-dev-env.tar.gz full-dev-snapshot
+
+      - name: ☁️ Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu24-full-dev-env
+          path: ubuntu24-full-dev-env.tar.gz
+
+      - name: 🚀 Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v24.04-arm64
+          files: ubuntu24-full-dev-env.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          name: Ubuntu 24.04 FULL Dev Snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
