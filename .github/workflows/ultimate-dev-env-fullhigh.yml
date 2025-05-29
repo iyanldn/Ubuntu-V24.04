@@ -127,3 +127,7 @@ jobs:
         run: |
           curl https://rclone.org/install.sh | sudo bash
           rclone copy ${{ env.TAR_NAME }} mydrive:Ubuntu24.04-Backups/
+
+      - name: ✅ Cek isi GDrive folder setelah upload
+        run: |
+          rclone lsf mydrive:Ubuntu24.04-Backups/
