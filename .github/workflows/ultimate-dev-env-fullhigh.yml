@@ -7,7 +7,7 @@ on:
       - 'v24.04-arm64'
 
 permissions:
-  contents: write  # WAJIB agar bisa upload ke GitHub Release
+  contents: write
 
 jobs:
   ultimate-dev-setup:
@@ -31,15 +31,29 @@ jobs:
       - name: 🔣 Install Language Runtimes
         run: |
           sudo apt install -y \
-            python3 python3-pip python3-venv nodejs npm golang-go \
-            openjdk-21-jdk default-jdk
+            python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
 
-      - name: 🌐 Install Web Stack
+      - name: 🌐 Install Web Stack (tanpa MongoDB)
         run: |
           sudo apt install -y \
             nginx mariadb-server redis-server postgresql
 
-      
+      - name: 🐳 Install Docker & Compose (Fix for Ubuntu 24.04)
+        run: |
+          sudo apt update
+          sudo apt install -y ca-certificates curl gnupg
+          sudo install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+          sudo apt update
+          sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo systemctl enable docker
+          sudo systemctl start docker || true
+
       - name: 📦 Install Python AI/ML Libraries
         run: |
           pip install --upgrade pip
@@ -80,21 +94,16 @@ jobs:
       - name: 🗜️ Compress Full Dev Environment
         run: |
           mkdir -p full-dev-snapshot
-
           cp -r ~/.config full-dev-snapshot/config || true
           cp -r ~/.local full-dev-snapshot/local || true
           cp -r ~/.npm full-dev-snapshot/npm || true
           cp -r ~/.cache full-dev-snapshot/cache || true
-
           sudo cp -r /usr/local full-dev-snapshot/usr-local || true
           sudo cp -r /usr/lib/node_modules full-dev-snapshot/node-modules || true
-
           PY_VER=$(python3 -c 'import sys; print("python{}.{}".format(sys.version_info[0], sys.version_info[1]))')
           sudo cp -r /usr/lib/$PY_VER full-dev-snapshot/python || true
-
           mkdir -p full-dev-snapshot/etc
           sudo cp /etc/{hosts,hostname,passwd,group,sudoers} full-dev-snapshot/etc/ || true
-
           sudo tar -czf ubuntu24-full-dev-env.tar.gz full-dev-snapshot
 
       - name: ☁️ Upload Artifact
@@ -111,6 +120,6 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
-          name: Ubuntu 24.04 FULL Dev Env Snapshot
+          name: Ubuntu 24.04 FULL Dev Snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
