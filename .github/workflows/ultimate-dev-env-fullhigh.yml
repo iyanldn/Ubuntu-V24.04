@@ -118,6 +118,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 📁 Setup Rclone Config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
+
       - name: 📤 Upload to Google Drive via Rclone
         run: |
           curl https://rclone.org/install.sh | sudo bash
