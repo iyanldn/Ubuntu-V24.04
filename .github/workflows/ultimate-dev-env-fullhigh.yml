@@ -12,7 +12,7 @@ permissions:
 jobs:
   ultimate-dev-setup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40  # Durasi maksimal (karena backup besar)
+    timeout-minutes: 40
 
     steps:
       - name: ✅ Checkout Repo
@@ -31,16 +31,17 @@ jobs:
       - name: 🔣 Install Language Runtimes
         run: |
           sudo apt install -y \
-            python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+            python3 python3-pip python3-venv nodejs npm golang-go \
+            openjdk-21-jdk default-jdk
 
-      - name: 🌐 Install Web Stack (tanpa MongoDB)
+      - name: 🌐 Install Web Stack
         run: |
           sudo apt install -y \
             nginx mariadb-server redis-server postgresql
 
       - name: 🐳 Install Docker & Compose
         run: |
-          sudo apt install -y docker.io docker-compose
+          sudo apt install -y docker.io docker-compose-plugin
           sudo systemctl enable docker
           sudo systemctl start docker || true
 
@@ -74,7 +75,7 @@ jobs:
           go version
           java -version
           docker --version
-          docker-compose --version
+          docker compose version
           nginx -v
           mariadb --version
           redis-server --version
@@ -85,27 +86,20 @@ jobs:
         run: |
           mkdir -p full-dev-snapshot
 
-          # Configs
           cp -r ~/.config full-dev-snapshot/config || true
           cp -r ~/.local full-dev-snapshot/local || true
           cp -r ~/.npm full-dev-snapshot/npm || true
           cp -r ~/.cache full-dev-snapshot/cache || true
 
-          # Neovim + build tools
           sudo cp -r /usr/local full-dev-snapshot/usr-local || true
-
-          # NodeJS global modules
           sudo cp -r /usr/lib/node_modules full-dev-snapshot/node-modules || true
 
-          # Python global libs
           PY_VER=$(python3 -c 'import sys; print("python{}.{}".format(sys.version_info[0], sys.version_info[1]))')
           sudo cp -r /usr/lib/$PY_VER full-dev-snapshot/python || true
 
-          # Basic system configs
           mkdir -p full-dev-snapshot/etc
           sudo cp /etc/{hosts,hostname,passwd,group,sudoers} full-dev-snapshot/etc/ || true
 
-          # Final archive
           sudo tar -czf ubuntu24-full-dev-env.tar.gz full-dev-snapshot
 
       - name: ☁️ Upload Artifact
@@ -122,6 +116,6 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
-          name: Ubuntu 24.04 FULL Dev Snapshot
+          name: Ubuntu 24.04 FULL Dev Env Snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
