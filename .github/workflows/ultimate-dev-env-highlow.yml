@@ -1,0 +1,102 @@
+name: Ultimate Dev Environment - Ubuntu 24.04 Lite
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v24.04-arm64'
+
+permissions:
+  contents: write  # ← WAJIB agar bisa upload ke GitHub Release
+
+jobs:
+  ultimate-dev-setup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30  # ⏱️ Batasi runtime agar tidak hang selamanya
+
+    steps:
+      - name: ✅ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🔄 Update & Upgrade
+        run: |
+          sudo apt update && sudo apt upgrade -y
+
+      - name: 🛠️ Install CLI + Build Tools
+        run: |
+          sudo apt install -y \
+            git curl wget unzip zip neovim tmux build-essential \
+            make gcc g++ zsh jq htop tree net-tools
+
+      - name: 🔣 Install Language Runtimes
+        run: |
+          sudo apt install -y \
+            python3 python3-pip nodejs npm golang-go openjdk-21-jdk
+
+      - name: 🌐 Install Web Stack
+        run: |
+          sudo apt install -y \
+            nginx mariadb-server redis-server
+
+      - name: 🐳 Install Docker & Compose
+        run: |
+          sudo apt install -y docker.io docker-compose
+          sudo systemctl enable docker
+          sudo systemctl start docker
+
+      - name: 📦 Install Python Dev Libraries (non-AI)
+        run: |
+          pip install --upgrade pip
+          pip install numpy pandas matplotlib flask jupyter requests
+
+      - name: 🛡️ Install Security Tools
+        run: |
+          sudo apt install -y \
+            ufw nmap netcat openssh-client fail2ban
+
+      - name: 🔐 Enable UFW Firewall
+        run: |
+          sudo ufw allow OpenSSH
+          sudo ufw allow 80
+          sudo ufw allow 443
+          sudo ufw --force enable
+
+      - name: 📋 Show Installed Versions
+        run: |
+          echo "--- VERSIONS ---"
+          git --version
+          node -v
+          npm -v
+          python3 --version
+          go version
+          java -version
+          docker --version
+          docker-compose --version
+          nginx -v
+          mariadb --version
+          redis-server --version
+
+      - name: 🗜️ Compress Dev Configs Snapshot
+        run: |
+          mkdir -p dev-env-snapshot
+          cp -r ~/.config dev-env-snapshot/config || true
+          cp -r ~/.local dev-env-snapshot/local || true
+          tar -czf ubuntu24-lite-env-v24.04.tar.gz dev-env-snapshot
+
+      - name: ☁️ Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu24-lite-env-v24.04
+          path: ubuntu24-lite-env-v24.04.tar.gz
+
+      - name: 🚀 Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v24.04-arm64
+          files: ubuntu24-lite-env-v24.04.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          name: Ubuntu 24.04 Dev Env Snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
