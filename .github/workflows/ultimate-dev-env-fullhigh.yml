@@ -90,16 +90,7 @@ jobs:
           redis-server --version
           psql --version
           nmap --version | head -n 1
-
-      - name: 🗜️ Compress Safe Dev Snapshot (Only User Environment)
-        run: |
-          mkdir -p dev-snapshot
-          cp -r ~/.config dev-snapshot/config || true
-          cp -r ~/.local dev-snapshot/local || true
-          cp -r ~/.npm dev-snapshot/npm || true
-          cp -r ~/.cache dev-snapshot/cache || true
-          tar -czf ubuntu24-dev-env-lite.tar.gz dev-snapshot
-
+          
       - name: ☁️ Upload Artifact
         uses: actions/upload-artifact@v4
         with:
