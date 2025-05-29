@@ -7,7 +7,7 @@ on:
       - 'v24.04-arm64'
 
 permissions:
-  contents: write
+  contents: write  # untuk upload ke GitHub Release
 
 jobs:
   ultimate-dev-setup:
@@ -40,7 +40,6 @@ jobs:
 
       - name: 🐳 Install Docker & Compose (via Docker repo)
         run: |
-          sudo apt-get update
           sudo apt-get install -y ca-certificates curl gnupg
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
@@ -48,7 +47,6 @@ jobs:
             "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
             $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
             sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           sudo systemctl enable docker
@@ -90,21 +88,37 @@ jobs:
           redis-server --version
           psql --version
           nmap --version | head -n 1
-          
-      - name: ☁️ Upload Artifact
+
+      - name: 🗜️ Compress Dev Snapshot (Lite Mode + Date)
+        run: |
+          mkdir -p dev-env-snapshot
+          cp -r ~/.config/nvim dev-env-snapshot/config-nvim || true
+          cp -r ~/.config/tmux dev-env-snapshot/config-tmux || true
+          cp -r ~/.zshrc dev-env-snapshot/zshrc || true
+          echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
+          TAR_NAME="ubuntu24-dev-env-lite-$(date +%Y-%m-%d).tar.gz"
+          tar -czf "$TAR_NAME" dev-env-snapshot
+          echo "TAR_NAME=$TAR_NAME" >> $GITHUB_ENV
+
+      - name: ☁️ Upload Artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu24-dev-env-lite
-          path: ubuntu24-dev-env-lite.tar.gz
+          path: ${{ env.TAR_NAME }}
 
       - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v24.04-arm64
-          files: ubuntu24-dev-env-lite.tar.gz
+          files: ${{ env.TAR_NAME }}
           generate_release_notes: true
           draft: false
           prerelease: false
           name: Ubuntu 24.04 Full Dev Snapshot (User Env Only)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📤 Upload to Google Drive via Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+          rclone copy ${{ env.TAR_NAME }} mydrive:Ubuntu24.04-Backups/
