@@ -43,10 +43,9 @@ jobs:
           sudo apt-get install -y ca-certificates curl gnupg
           sudo install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-            $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-            sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           sudo systemctl enable docker
@@ -117,17 +116,3 @@ jobs:
           name: Ubuntu 24.04 Full Dev Snapshot (User Env Only)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 📁 Setup Rclone Config from Base64
-        run: |
-          mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONF_B64 }}" | base64 --decode > ~/.config/rclone/rclone.conf
-            
-      - name: 📤 Upload to Google Drive via Rclone
-        run: |
-          curl https://rclone.org/install.sh | sudo bash
-          rclone copy ${{ env.TAR_NAME }} MyDrive:Ubuntu24.04-Backups/
-          
-      - name: ✅ Cek isi GDrive folder setelah upload
-        run: |
-          rclone lsf mydrive:Ubuntu24.04-Backups/
