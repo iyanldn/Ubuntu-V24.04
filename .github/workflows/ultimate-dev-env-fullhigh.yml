@@ -122,12 +122,12 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
           echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
-
+            
       - name: 📤 Upload to Google Drive via Rclone
         run: |
           curl https://rclone.org/install.sh | sudo bash
-          rclone copy ${{ env.TAR_NAME }} mydrive:Ubuntu24.04-Backups/
-
+          rclone copy ${{ env.TAR_NAME }} MyDrive:Ubuntu24.04-Backups/
+          
       - name: ✅ Cek isi GDrive folder setelah upload
         run: |
           rclone lsf mydrive:Ubuntu24.04-Backups/
