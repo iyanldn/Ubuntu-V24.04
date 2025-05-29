@@ -1,4 +1,4 @@
-name: Ultimate Dev Environment - Ubuntu 24.04 Lite
+name: Ultimate Dev Environment - Ubuntu 24.04 Full
 
 on:
   workflow_dispatch:
@@ -7,12 +7,12 @@ on:
       - 'v24.04-arm64'
 
 permissions:
-  contents: write  # ← WAJIB agar bisa upload ke GitHub Release
+  contents: write  # WAJIB agar bisa upload ke GitHub Release
 
 jobs:
   ultimate-dev-setup:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30  # ⏱️ Batasi runtime agar tidak hang selamanya
+    timeout-minutes: 60  # Tambah waktu karena paket lebih besar
 
     steps:
       - name: ✅ Checkout Repo
@@ -26,17 +26,19 @@ jobs:
         run: |
           sudo apt install -y \
             git curl wget unzip zip neovim tmux build-essential \
-            make gcc g++ zsh jq htop tree net-tools
+            make cmake gcc g++ zsh jq htop tree file net-tools gnupg
 
       - name: 🔣 Install Language Runtimes
         run: |
           sudo apt install -y \
-            python3 python3-pip nodejs npm golang-go openjdk-21-jdk
+            python3 python3-pip python3-venv \
+            nodejs npm golang-go default-jdk openjdk-21-jdk
 
       - name: 🌐 Install Web Stack
         run: |
           sudo apt install -y \
-            nginx mariadb-server redis-server
+            nginx mariadb-server redis-server \
+            mongodb postgresql
 
       - name: 🐳 Install Docker & Compose
         run: |
@@ -44,17 +46,19 @@ jobs:
           sudo systemctl enable docker
           sudo systemctl start docker
 
-      - name: 📦 Install Python Dev Libraries (non-AI)
+      - name: 🤖 Install Python AI/ML Libraries
         run: |
           pip install --upgrade pip
-          pip install numpy pandas matplotlib flask jupyter requests
+          pip install numpy pandas matplotlib seaborn scikit-learn \
+            jupyter opencv-python transformers torch torchvision
 
-      - name: 🛡️ Install Security Tools
+      - name: 🛡️ Install Security Tools (Basic)
         run: |
           sudo apt install -y \
-            ufw nmap netcat openssh-client fail2ban
+            ufw nmap netcat openssh-client fail2ban \
+            lynis whois dnsutils
 
-      - name: 🔐 Enable UFW Firewall
+      - name: 🔐 Enable UFW Firewall (Safe Defaults)
         run: |
           sudo ufw allow OpenSSH
           sudo ufw allow 80
@@ -73,30 +77,35 @@ jobs:
           docker --version
           docker-compose --version
           nginx -v
-          mariadb --version
+          mysql --version || mariadb --version
+          psql --version
+          mongod --version || echo "MongoDB not running"
           redis-server --version
+          nmap --version | head -n 1
 
       - name: 🗜️ Compress Dev Configs Snapshot
         run: |
-          mkdir -p dev-env-snapshot
-          cp -r ~/.config dev-env-snapshot/config || true
-          cp -r ~/.local dev-env-snapshot/local || true
-          tar -czf ubuntu24-lite-env-v24.04.tar.gz dev-env-snapshot
+          mkdir -p dev-env-full
+          cp -r ~/.config dev-env-full/config || true
+          cp -r ~/.local dev-env-full/local || true
+          cp -r ~/.npm dev-env-full/npm || true
+          cp -r ~/.cache dev-env-full/cache || true
+          tar -czf ubuntu24-full-env.tar.gz dev-env-full
 
       - name: ☁️ Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ubuntu24-lite-env-v24.04
-          path: ubuntu24-lite-env-v24.04.tar.gz
+          name: ubuntu24-full-env
+          path: ubuntu24-full-env.tar.gz
 
       - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v24.04-arm64
-          files: ubuntu24-lite-env-v24.04.tar.gz
+          files: ubuntu24-full-env.tar.gz
           generate_release_notes: true
           draft: false
           prerelease: false
-          name: Ubuntu 24.04 Dev Env Snapshot
+          name: Ubuntu 24.04 Full Dev Environment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
