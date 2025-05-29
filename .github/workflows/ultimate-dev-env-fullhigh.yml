@@ -2,12 +2,9 @@ name: Ultimate Dev Environment - Ubuntu 24.04 FULL
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v24.04-arm64'
 
 permissions:
-  contents: write  # untuk upload ke GitHub Release
+  contents: write
 
 jobs:
   ultimate-dev-setup:
@@ -18,9 +15,15 @@ jobs:
       - name: ✅ Checkout Repo
         uses: actions/checkout@v4
 
-      - name: 🔄 Update & Upgrade
+      - name: 📅 Set Tanggal untuk TAG & FILE
         run: |
-          sudo apt-get update && sudo apt-get upgrade -y
+          DATE=$(date +%Y-%m-%d)
+          echo "TAR_NAME=ubuntu24-dev-env-lite-$DATE.tar.gz" >> $GITHUB_ENV
+          echo "RELEASE_NAME=Ubuntu 24.04 Dev Snapshot - $DATE" >> $GITHUB_ENV
+          echo "TAG_NAME=v24.04-lite-$DATE" >> $GITHUB_ENV
+
+      - name: 🔄 Update & Upgrade
+        run: sudo apt-get update && sudo apt-get upgrade -y
 
       - name: 🛠️ Install CLI + Build Tools
         run: |
@@ -88,16 +91,21 @@ jobs:
           psql --version
           nmap --version | head -n 1
 
-      - name: 🗜️ Compress Dev Snapshot (Lite Mode + Date)
+      - name: 🔍 Debug:Cek isi sebelum backup 
+        run: |
+          echo "--- CHECK ~/.config/nvim ---"
+          ls -la ~/.config/nvim || echo "❌ nvim config not found"
+          echo "--- CHECK ~/.zshrc ---"
+          cat ~/.zshrc || echo "❌ .zshrc not found"
+
+      - name: 🗜️ Compress Dev Snapshot (Lite Mode)
         run: |
           mkdir -p dev-env-snapshot
           cp -r ~/.config/nvim dev-env-snapshot/config-nvim || true
           cp -r ~/.config/tmux dev-env-snapshot/config-tmux || true
           cp -r ~/.zshrc dev-env-snapshot/zshrc || true
           echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
-          TAR_NAME="ubuntu24-dev-env-lite-$(date +%Y-%m-%d).tar.gz"
           tar -czf "$TAR_NAME" dev-env-snapshot
-          echo "TAR_NAME=$TAR_NAME" >> $GITHUB_ENV
 
       - name: ☁️ Upload Artifact to GitHub
         uses: actions/upload-artifact@v4
@@ -108,11 +116,11 @@ jobs:
       - name: 🚀 Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v24.04-arm64
+          tag_name: ${{ env.TAG_NAME }}
           files: ${{ env.TAR_NAME }}
           generate_release_notes: true
           draft: false
           prerelease: false
-          name: Ubuntu 24.04 Full Dev Snapshot (User Env Only)
+          name: ${{ env.RELEASE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
