@@ -6,15 +6,20 @@
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash"
   },
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
-    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
-    "ghcr.io/devcontainers/features/go:1": { "version": "1.21" },
-    "ghcr.io/devcontainers/features/java:1": { "version": "21" }
+  "remoteUser": "root",
+  "postCreateCommand": "echo ✅ Ubuntu Dev Env Ready!",
+  "features": {},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-vscode.cpptools",
+        "esbenp.prettier-vscode"
+      ]
+    }
   },
-  "forwardPorts": [3000, 8000, 8080],
-  "remoteUser": "vscode"
+  "mounts": [
+    "source=${localWorkspaceFolder}/.config,target=/root/.config,type=bind",
+    "source=${localWorkspaceFolder}/.zshrc,target=/root/.zshrc,type=bind"
+  ]
 }
