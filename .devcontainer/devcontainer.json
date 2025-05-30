@@ -1,5 +1,20 @@
 {
-  "name": "Ubuntu Dev Env",
-  "image": "ubuntu:24.04",
-  "postCreateCommand": "apt-get update && apt-get install -y curl git neovim tmux zsh python3-pip nodejs npm"
+  "name": "Ultimate Dev Environment - Ubuntu 24.04",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+    "ghcr.io/devcontainers/features/go:1": { "version": "1.21" },
+    "ghcr.io/devcontainers/features/java:1": { "version": "21" }
+  },
+  "forwardPorts": [3000, 8000, 8080],
+  "remoteUser": "vscode"
 }
