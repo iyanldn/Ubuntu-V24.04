@@ -1,0 +1,5 @@
+{
+  "name": "Ubuntu Dev Env",
+  "image": "ubuntu:24.04",
+  "postCreateCommand": "apt-get update && apt-get install -y curl git neovim tmux zsh python3-pip nodejs npm"
+}
