@@ -66,36 +66,28 @@ jobs:
         run: |
           sudo apt-get install -y \
             ufw nmap netcat-traditional openssh-client fail2ban lynis whois dnsutils
-
-      - name: 🔐 Enable UFW Firewall
-        run: |
           sudo ufw allow OpenSSH
           sudo ufw allow 80
           sudo ufw allow 443
           sudo ufw --force enable
 
-      - name: 📋 Show Installed Versions
+      - name: 🔧 Generate Config Files (Dummy)
         run: |
-          echo "--- INSTALLED VERSIONS ---"
-          git --version
-          node -v
-          npm -v
-          python3 --version
-          go version
-          java -version
-          docker --version
-          docker compose version
-          nginx -v
-          mariadb --version
-          redis-server --version
-          psql --version
-          nmap --version | head -n 1
+          mkdir -p ~/.config/nvim
+          echo "\" Auto-generated config" > ~/.config/nvim/init.vim
+          echo "set number" >> ~/.config/nvim/init.vim
 
-      - name: 🔍 Debug:Cek isi sebelum backup 
+          mkdir -p ~/.config/tmux
+          echo "# Auto tmux config" > ~/.config/tmux/tmux.conf
+
+          echo "# .zshrc auto" > ~/.zshrc
+          echo "alias ll='ls -la'" >> ~/.zshrc
+
+      - name: 🔍 Debug: Cek isi sebelum backup
         run: |
-          echo "--- CHECK ~/.config/nvim ---"
+          echo "--- ~/.config/nvim ---"
           ls -la ~/.config/nvim || echo "❌ nvim config not found"
-          echo "--- CHECK ~/.zshrc ---"
+          echo "--- ~/.zshrc ---"
           cat ~/.zshrc || echo "❌ .zshrc not found"
 
       - name: 🗜️ Compress Dev Snapshot (Lite Mode)
