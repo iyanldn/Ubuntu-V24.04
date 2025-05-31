@@ -4,6 +4,9 @@ jobs:
   ultimate-dev-setup:
     docker:
       - image: ubuntu:24.04
+    environment:
+      DEBIAN_FRONTEND: noninteractive  # FIX: non-interactive mode
+
     steps:
       - checkout
 
@@ -16,6 +19,14 @@ jobs:
             echo "export TAG_NAME=v24.04-lite-$DATE" >> $BASH_ENV
 
       - run:
+          name: 🌍 Set Timezone ke Asia/Makassar
+          command: |
+            echo "Asia/Makassar" > /etc/timezone
+            ln -sf /usr/share/zoneinfo/Asia/Makassar /etc/localtime
+            dpkg-reconfigure -f noninteractive tzdata || true
+            date  # opsional: log waktu
+
+      - run:
           name: 🔄 Update & Upgrade
           command: |
             apt-get update && apt-get upgrade -y
@@ -25,7 +36,7 @@ jobs:
           command: |
             apt-get install -y \
               git curl wget unzip zip neovim tmux build-essential \
-              make cmake gcc g++ zsh jq htop tree net-tools file gnupg
+              make cmake gcc g++ zsh jq htop tree net-tools file gnupg tzdata
 
       - run:
           name: 🔣 Install Language Runtimes
@@ -62,7 +73,7 @@ jobs:
           name: 🧪 Tambahkan File Dummy (800MB)
           command: |
             mkdir -p ~/dummy
-            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=400 || true
+            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=900 || true
 
       - run:
           name: 🗜️ Compress Snapshot
