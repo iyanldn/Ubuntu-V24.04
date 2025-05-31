@@ -17,42 +17,33 @@ jobs:
 
       - run:
           name: 🔄 Update & Upgrade
-          command: sudo apt-get update && sudo apt-get upgrade -y
+          command: |
+            apt-get update && apt-get upgrade -y
 
       - run:
           name: 🛠️ Install CLI + Build Tools
           command: |
-            sudo apt-get install -y \
+            apt-get install -y \
               git curl wget unzip zip neovim tmux build-essential \
               make cmake gcc g++ zsh jq htop tree net-tools file gnupg
 
       - run:
           name: 🔣 Install Language Runtimes
           command: |
-            sudo apt-get install -y \
+            apt-get install -y \
               python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
 
       - run:
           name: 🌐 Install Web Stack
           command: |
-            sudo apt-get install -y \
+            apt-get install -y \
               nginx mariadb-server redis-server postgresql
 
       - run:
           name: 📦 Install Python AI/ML
           command: |
-            sudo pip3 install --upgrade pip
-            pip install numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python transformers torch torchvision
-
-      - run:
-          name: 🛡️ Install Security Tools
-          command: |
-            sudo apt-get install -y \
-              ufw nmap netcat-traditional openssh-client fail2ban lynis whois dnsutils
-            sudo ufw allow OpenSSH
-            sudo ufw allow 80
-            sudo ufw allow 443
-            sudo ufw --force enable
+            pip3 install --upgrade pip
+            pip3 install numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python transformers torch torchvision
 
       - run:
           name: 🔧 Generate Config Files
@@ -68,10 +59,10 @@ jobs:
             echo "alias ll='ls -la'" >> ~/.zshrc
 
       - run:
-          name: 🧪 Tambahkan File Dummy
+          name: 🧪 Tambahkan File Dummy (800MB)
           command: |
             mkdir -p ~/dummy
-            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=800
+            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=400 || true
 
       - run:
           name: 🗜️ Compress Snapshot
@@ -85,8 +76,10 @@ jobs:
             tar -czf "$TAR_NAME" dev-env-snapshot
 
       - run:
-          name: 📏 Cek Ukuran
-          command: du -h "$TAR_NAME" || ls -lh "$TAR_NAME"
+          name: 📏 Cek Ukuran File
+          command: |
+            ls -lh "$TAR_NAME"
+            du -h "$TAR_NAME"
 
       - store_artifacts:
           path: ubuntu24-dev-env-lite-*.tar.gz
