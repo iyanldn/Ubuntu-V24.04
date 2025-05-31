@@ -1,0 +1,132 @@
+name: Ultimate Dev Environment - Ubuntu 24.04 FULL
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ultimate-dev-setup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: ✅ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 📅 Set Tanggal untuk TAG & FILE
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          echo "TAR_NAME=ubuntu24-dev-env-lite-$DATE.tar.gz" >> $GITHUB_ENV
+          echo "RELEASE_NAME=Ubuntu 24.04 Dev Snapshot - $DATE" >> $GITHUB_ENV
+          echo "TAG_NAME=v24.04-lite-$DATE" >> $GITHUB_ENV
+
+      - name: 🔄 Update & Upgrade
+        run: sudo apt-get update && sudo apt-get upgrade -y
+
+      - name: 🛠️ Install CLI + Build Tools
+        run: |
+          sudo apt-get install -y \
+            git curl wget unzip zip neovim tmux build-essential \
+            make cmake gcc g++ zsh jq htop tree net-tools file gnupg
+
+      - name: 🔣 Install Language Runtimes
+        run: |
+          sudo apt-get install -y \
+            python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+
+      - name: 🌐 Install Web Stack
+        run: |
+          sudo apt-get install -y \
+            nginx mariadb-server redis-server postgresql
+
+      - name: 🐳 Install Docker & Compose
+        run: |
+          sudo apt-get install -y ca-certificates curl gnupg
+          sudo install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          sudo systemctl enable docker
+          sudo systemctl start docker || true
+
+      - name: 📦 Install Python AI/ML Libraries
+        run: |
+          pip install --upgrade pip
+          pip install \
+            numpy pandas matplotlib scikit-learn \
+            jupyter seaborn opencv-python \
+            transformers torch torchvision
+
+      - name: 🛡️ Install Security Tools
+        run: |
+          sudo apt-get install -y \
+            ufw nmap netcat-traditional openssh-client fail2ban lynis whois dnsutils
+          sudo ufw allow OpenSSH
+          sudo ufw allow 80
+          sudo ufw allow 443
+          sudo ufw --force enable
+
+      - name: 🔧 Generate Config Files (Dummy)
+        run: |
+          mkdir -p ~/.config/nvim
+          echo "\" Auto-generated config" > ~/.config/nvim/init.vim
+          echo "set number" >> ~/.config/nvim/init.vim
+
+          mkdir -p ~/.config/tmux
+          echo "# Auto tmux config" > ~/.config/tmux/tmux.conf
+
+          echo "# .zshrc auto" > ~/.zshrc
+          echo "alias ll='ls -la'" >> ~/.zshrc
+
+      - name: 🧪 Tambahkan File Dummy (100MB)
+        run: |
+          mkdir -p ~/dummy
+          dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=100
+
+      - name: 🔍 Debug:Cek isi sebelum backup
+        run: |
+          echo "--- ~/.config/nvim ---"
+          ls -la ~/.config/nvim || echo "❌ nvim config not found"
+          echo "--- ~/.zshrc ---"
+          cat ~/.zshrc || echo "❌ .zshrc not found"
+
+      - name: 🗜️ Compress Dev Snapshot (Lite Mode)
+        run: |
+          mkdir -p dev-env-snapshot
+          cp -r ~/.config/nvim dev-env-snapshot/config-nvim || true
+          cp -r ~/.config/tmux dev-env-snapshot/config-tmux || true
+          cp -r ~/.zshrc dev-env-snapshot/zshrc || true
+          cp -r ~/dummy dev-env-snapshot/fake || true
+          echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
+          tar -czf "$TAR_NAME" dev-env-snapshot
+
+      - name: 📏 Cek Ukuran File .tar.gz
+        run: |
+          FILE="${{ env.TAR_NAME }}"
+          echo "📦 File yang akan diupload: $FILE"
+          ls -lh "$FILE"
+          echo "🧮 Ukuran dalam MB:"
+          du -h "$FILE"
+
+      - name: ☁️ Upload Artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu24-dev-env-lite
+          path: ${{ env.TAR_NAME }}
+
+      - name: 🚀 Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: ${{ env.TAR_NAME }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          name: ${{ env.RELEASE_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
