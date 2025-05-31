@@ -1,0 +1,99 @@
+version: 2.1
+
+jobs:
+  ultimate-dev-setup:
+    docker:
+      - image: ubuntu:24.04
+    steps:
+      - checkout
+
+      - run:
+          name: 📅 Set Tanggal untuk TAG & FILE
+          command: |
+            DATE=$(date +%Y-%m-%d)
+            echo "export TAR_NAME=ubuntu24-dev-env-lite-$DATE.tar.gz" >> $BASH_ENV
+            echo "export RELEASE_NAME='Ubuntu 24.04 Dev Snapshot - $DATE'" >> $BASH_ENV
+            echo "export TAG_NAME=v24.04-lite-$DATE" >> $BASH_ENV
+
+      - run:
+          name: 🔄 Update & Upgrade
+          command: sudo apt-get update && sudo apt-get upgrade -y
+
+      - run:
+          name: 🛠️ Install CLI + Build Tools
+          command: |
+            sudo apt-get install -y \
+              git curl wget unzip zip neovim tmux build-essential \
+              make cmake gcc g++ zsh jq htop tree net-tools file gnupg
+
+      - run:
+          name: 🔣 Install Language Runtimes
+          command: |
+            sudo apt-get install -y \
+              python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+
+      - run:
+          name: 🌐 Install Web Stack
+          command: |
+            sudo apt-get install -y \
+              nginx mariadb-server redis-server postgresql
+
+      - run:
+          name: 📦 Install Python AI/ML
+          command: |
+            sudo pip3 install --upgrade pip
+            pip install numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python transformers torch torchvision
+
+      - run:
+          name: 🛡️ Install Security Tools
+          command: |
+            sudo apt-get install -y \
+              ufw nmap netcat-traditional openssh-client fail2ban lynis whois dnsutils
+            sudo ufw allow OpenSSH
+            sudo ufw allow 80
+            sudo ufw allow 443
+            sudo ufw --force enable
+
+      - run:
+          name: 🔧 Generate Config Files
+          command: |
+            mkdir -p ~/.config/nvim
+            echo "\" Auto-generated config" > ~/.config/nvim/init.vim
+            echo "set number" >> ~/.config/nvim/init.vim
+
+            mkdir -p ~/.config/tmux
+            echo "# Auto tmux config" > ~/.config/tmux/tmux.conf
+
+            echo "# .zshrc auto" > ~/.zshrc
+            echo "alias ll='ls -la'" >> ~/.zshrc
+
+      - run:
+          name: 🧪 Tambahkan File Dummy
+          command: |
+            mkdir -p ~/dummy
+            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=800
+
+      - run:
+          name: 🗜️ Compress Snapshot
+          command: |
+            mkdir -p dev-env-snapshot
+            cp -r ~/.config/nvim dev-env-snapshot/config-nvim || true
+            cp -r ~/.config/tmux dev-env-snapshot/config-tmux || true
+            cp ~/.zshrc dev-env-snapshot/zshrc || true
+            cp -r ~/dummy dev-env-snapshot/fake || true
+            echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
+            tar -czf "$TAR_NAME" dev-env-snapshot
+
+      - run:
+          name: 📏 Cek Ukuran
+          command: du -h "$TAR_NAME" || ls -lh "$TAR_NAME"
+
+      - store_artifacts:
+          path: ubuntu24-dev-env-lite-*.tar.gz
+          destination: dev-env-snapshot
+
+workflows:
+  version: 2
+  build_and_package:
+    jobs:
+      - ultimate-dev-setup
