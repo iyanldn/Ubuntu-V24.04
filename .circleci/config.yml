@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: ubuntu:24.04
     environment:
-      DEBIAN_FRONTEND: noninteractive  # prevent prompts
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
       - checkout
@@ -17,6 +17,7 @@ jobs:
             echo "export TAR_NAME=ubuntu24-dev-env-lite-$DATE.tar.gz" >> $BASH_ENV
             echo "export RELEASE_NAME='Ubuntu 24.04 Dev Snapshot - $DATE'" >> $BASH_ENV
             echo "export TAG_NAME=v24.04-lite-$DATE" >> $BASH_ENV
+            echo "📆 Tanggal snapshot: $DATE"
 
       - run:
           name: 🌍 Set Timezone ke Asia/Makassar
@@ -29,54 +30,67 @@ jobs:
       - run:
           name: 🔄 Update & Upgrade
           command: |
+            echo "🔁 Running apt-get update & upgrade..."
             apt-get update && apt-get upgrade -y
 
       - run:
           name: 🛠️ Install CLI + Build Tools
           command: |
+            echo "📦 Installing CLI & dev tools..."
             apt-get install -y \
               git curl wget unzip zip neovim tmux build-essential \
               make cmake gcc g++ zsh jq htop tree net-tools file gnupg tzdata
+            echo "✅ CLI tools installed"
 
       - run:
           name: 🔣 Install Language Runtimes
           command: |
+            echo "📦 Installing runtimes (Python, Node.js, Java, Go)..."
             apt-get install -y \
               python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+            echo "✅ Runtimes installed"
 
       - run:
           name: 🌐 Install Web Stack
           command: |
-            apt-get install -y \
-              nginx mariadb-server redis-server postgresql
+            echo "🌐 Installing web servers and DBs..."
+            apt-get install -y nginx mariadb-server redis-server postgresql
+            echo "✅ Web stack installed"
 
       - run:
-          name: 📦 Install Python AI/ML (Fix Python 3.12)
+          name: 📦 Install Python AI/ML (tanpa pip upgrade)
           command: |
-            pip3 install --upgrade pip --break-system-packages
+            echo "📊 Installing Python ML packages..."
             pip3 install --break-system-packages \
               numpy pandas matplotlib scikit-learn \
               jupyter seaborn opencv-python \
               transformers torch torchvision
+            echo "✅ Python packages installed"
 
       - run:
           name: 🔧 Generate Config Files
           command: |
-            mkdir -p ~/.config/nvim
+            mkdir -p ~/.config/nvim ~/.config/tmux
             echo "\" Auto-generated config" > ~/.config/nvim/init.vim
             echo "set number" >> ~/.config/nvim/init.vim
-
-            mkdir -p ~/.config/tmux
             echo "# Auto tmux config" > ~/.config/tmux/tmux.conf
-
             echo "# .zshrc auto" > ~/.zshrc
             echo "alias ll='ls -la'" >> ~/.zshrc
+
+            echo "📝 Verifying config files..."
+            ls -lah ~/.config/nvim
+            cat ~/.config/nvim/init.vim
+            ls -lah ~/.config/tmux
+            cat ~/.config/tmux/tmux.conf
+            cat ~/.zshrc
 
       - run:
           name: 🧪 Tambahkan File Dummy (800MB)
           command: |
             mkdir -p ~/dummy
             dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=800 || true
+            echo "📦 Dummy file dibuat:"
+            ls -lh ~/dummy/filler.bin
 
       - run:
           name: 🗜️ Compress Snapshot
@@ -87,11 +101,17 @@ jobs:
             cp ~/.zshrc dev-env-snapshot/zshrc || true
             cp -r ~/dummy dev-env-snapshot/fake || true
             echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
+
+            echo "📦 Isi folder sebelum compress:"
+            ls -R dev-env-snapshot
+
             tar -czf "$TAR_NAME" dev-env-snapshot
+            echo "✅ Snapshot berhasil dikompres jadi: $TAR_NAME"
 
       - run:
-          name: 📏 Cek Ukuran File
+          name: 📏 Cek Ukuran File Snapshot
           command: |
+            echo "🔍 Ukuran file snapshot:"
             ls -lh "$TAR_NAME"
             du -h "$TAR_NAME"
 
