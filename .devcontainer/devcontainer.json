@@ -7,7 +7,7 @@
     "terminal.integrated.shell.linux": "/bin/bash"
   },
   "remoteUser": "root",
-  "postCreateCommand": "echo ✅ Ubuntu Dev Env Ready!",
+  "postCreateCommand": "cp -r .devcontainer/configs/.zshrc ~/.zshrc && cp -r .devcontainer/configs/nvim ~/.config/nvim && echo ✅ Ubuntu Dev Env Ready!",
   "features": {},
   "customizations": {
     "vscode": {
@@ -17,9 +17,5 @@
         "esbenp.prettier-vscode"
       ]
     }
-  },
-  "mounts": [
-    "source=${localWorkspaceFolder}/.config,target=/root/.config,type=bind",
-    "source=${localWorkspaceFolder}/.zshrc,target=/root/.zshrc,type=bind"
-  ]
+  }
 }
