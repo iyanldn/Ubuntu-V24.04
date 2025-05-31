@@ -83,7 +83,7 @@ jobs:
           echo "# .zshrc auto" > ~/.zshrc
           echo "alias ll='ls -la'" >> ~/.zshrc
 
-      - name: 🔍 Debug: Cek isi sebelum backup
+      - name: 🔍 Debug:Cek isi sebelum backup
         run: |
           echo "--- ~/.config/nvim ---"
           ls -la ~/.config/nvim || echo "❌ nvim config not found"
