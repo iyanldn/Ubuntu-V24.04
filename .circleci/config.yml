@@ -136,22 +136,22 @@ jobs:
             git config --global user.email "ci@circleci"
             git config --global user.name "circleci-bot"
             git tag "$TAG" || true
-            git push "https://${GH_TOKEN}@github.com/iyanldn/https://github.com/iyanldn/Ubuntu-V24.04.git.git" "$TAG"
+            git push "https://${GH_TOKEN}@github.com/iyanldn/Ubuntu-V24.04.git" "$TAG"
 
             curl -s -X POST \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/json" \
               -d "{\"tag_name\":\"$TAG\", \"name\":\"$RELEASE_NAME\", \"body\":\"$BODY\", \"draft\":false, \"prerelease\":false}" \
-              https://api.github.com/repos/<user>/<repo>/releases || true
+              https://api.github.com/repos/iyanldn/Ubuntu-V24.04/releases || true
 
             RELEASE_ID=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
-              https://api.github.com/repos/<user>/<repo>/releases/tags/$TAG | jq -r .id)
+              https://api.github.com/repos/iyanldn/Ubuntu-V24.04/releases/tags/$TAG | jq -r .id)
 
             curl -s -X POST \
               -H "Authorization: token ${GH_TOKEN}" \
               -H "Content-Type: application/gzip" \
               --data-binary @"$FILE" \
-              "https://uploads.github.com/repos/<user>/<repo>/releases/$RELEASE_ID/assets?name=$FILE"
+              "https://uploads.github.com/repos/iyanldn/Ubuntu-V24.04/releases/$RELEASE_ID/assets?name=$FILE"
 
 workflows:
   version: 2
