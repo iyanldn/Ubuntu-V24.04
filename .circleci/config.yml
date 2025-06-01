@@ -6,6 +6,7 @@ jobs:
       - image: ubuntu:24.04
     environment:
       DEBIAN_FRONTEND: noninteractive
+
     steps:
       - checkout
 
@@ -16,7 +17,7 @@ jobs:
             echo "export TAR_NAME=ubuntu24-full-dev-$DATE.tar.gz" >> $BASH_ENV
             echo "export RELEASE_NAME='Ubuntu 24.04 Full Dev Snapshot - $DATE'" >> $BASH_ENV
             echo "export TAG_NAME=v24.04-full-$DATE" >> $BASH_ENV
-            echo "🗓️ Snapshot Date: $DATE"
+            echo "📆 Snapshot Date: $DATE"
 
       - run:
           name: 🌍 Set Timezone Asia/Makassar
@@ -27,12 +28,12 @@ jobs:
             date
 
       - run:
-          name: ↺ Update dan Upgrade
+          name: 🔄 Update dan Upgrade
           command: |
             apt-get update && apt-get upgrade -y
 
       - run:
-          name: 🛠️ Install CLI Tools + Utilities
+          name: 🧰 Install CLI Tools
           command: |
             apt-get install -y \
               git curl wget unzip zip build-essential \
@@ -41,15 +42,21 @@ jobs:
               sudo software-properties-common openssh-client
 
       - run:
-          name: 🎓 Install Language Runtimes
+          name: 📚 Install Python + Java + Go + Ruby
           command: |
             apt-get install -y \
               python3 python3-pip python3-venv \
-              nodejs npm golang-go openjdk-21-jdk \
-              ruby-full default-jdk
+              golang-go openjdk-21-jdk ruby-full default-jdk \
+              --fix-missing
 
       - run:
-          name: 💪 Install Web Stack
+          name: 🌐 Install Node.js via NodeSource
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+
+      - run:
+          name: 🌐 Install Web Stack
           command: |
             apt-get install -y \
               nginx mariadb-server redis-server \
@@ -57,11 +64,12 @@ jobs:
               mongodb
 
       - run:
-          name: 🧪 Install Docker + Compose
+          name: 🐳 Install Docker + Compose
           command: |
             apt-get install -y ca-certificates curl gnupg lsb-release
             install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+              gpg --dearmor -o /etc/apt/keyrings/docker.gpg
             echo \
               "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
               $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
@@ -74,7 +82,7 @@ jobs:
             apt-get install -y ufw fail2ban nmap sslscan lynis whois
 
       - run:
-          name: 📊 Install Python AI/ML
+          name: 🤖 Install Python AI/ML
           command: |
             pip3 install --break-system-packages \
               numpy pandas matplotlib scikit-learn \
@@ -82,13 +90,13 @@ jobs:
               transformers torch torchvision
 
       - run:
-          name: ⚙️ Setup Config Files + Dummy
+          name: 🧾 Setup Configs + Dummy File
           command: |
             mkdir -p ~/.config/nvim ~/.config/tmux ~/dummy
             echo "set number" > ~/.config/nvim/init.vim
             echo "set -g mouse on" > ~/.config/tmux/tmux.conf
-            echo "alias ll='ls -la'" >> ~/.zshrc
-            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=500 || true
+            echo "alias ll='ls -la'" > ~/.zshrc
+            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=800 || true
 
       - run:
           name: 📦 Compress Snapshot
@@ -101,7 +109,7 @@ jobs:
             tar -czf "$TAR_NAME" full-dev-snapshot
 
       - run:
-          name: 🔢 Cek Ukuran Snapshot
+          name: 📏 Check File Size
           command: |
             ls -lh "$TAR_NAME"
             du -h "$TAR_NAME"
@@ -115,4 +123,3 @@ workflows:
   full_build:
     jobs:
       - ubuntu24-full-dev
-
