@@ -11,6 +11,13 @@ jobs:
       - checkout
 
       - run:
+          name: 🔁 Ganti Mirror APT (Fix 403 Forbidden)
+          command: |
+            sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirror.kku.ac.th/ubuntu|g' /etc/apt/sources.list
+            sed -i 's|http://security.ubuntu.com/ubuntu|http://mirror.kku.ac.th/ubuntu|g' /etc/apt/sources.list
+            apt-get update || true
+
+      - run:
           name: ✨ Set Metadata & Env
           command: |
             DATE=$(date +%Y-%m-%d)
@@ -56,9 +63,8 @@ jobs:
             apt-get install -y nodejs
 
       - run:
-          name: 🌐 Install Web Stack (Fix exit 100)
+          name: 🌐 Install Web Stack
           command: |
-            apt-get update || true
             apt-get install -y \
               nginx mariadb-server redis-server \
               postgresql php php-cli php-fpm \
