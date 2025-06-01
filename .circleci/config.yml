@@ -1,54 +1,80 @@
 version: 2.1
 
 jobs:
-  ultimate-dev-setup:
+  ubuntu24-full-dev:
     docker:
       - image: ubuntu:24.04
     environment:
       DEBIAN_FRONTEND: noninteractive
-
     steps:
       - checkout
 
       - run:
-          name: 📅 Set Tanggal untuk FILE
+          name: ✨ Set Metadata & Env
           command: |
-            echo "📆 Snapshot started on $(date)"
+            DATE=$(date +%Y-%m-%d)
+            echo "export TAR_NAME=ubuntu24-full-dev-$DATE.tar.gz" >> $BASH_ENV
+            echo "export RELEASE_NAME='Ubuntu 24.04 Full Dev Snapshot - $DATE'" >> $BASH_ENV
+            echo "export TAG_NAME=v24.04-full-$DATE" >> $BASH_ENV
+            echo "🗓️ Snapshot Date: $DATE"
 
       - run:
-          name: 🌍 Set Timezone ke Asia/Makassar
+          name: 🌍 Set Timezone Asia/Makassar
           command: |
             echo "Asia/Makassar" > /etc/timezone
             ln -sf /usr/share/zoneinfo/Asia/Makassar /etc/localtime
             dpkg-reconfigure -f noninteractive tzdata || true
-            echo "🕒 Timezone set:"
             date
 
       - run:
-          name: 🔄 Update & Upgrade
+          name: ↺ Update dan Upgrade
           command: |
             apt-get update && apt-get upgrade -y
 
       - run:
-          name: 🛠️ Install CLI + Build Tools
+          name: 🛠️ Install CLI Tools + Utilities
           command: |
             apt-get install -y \
-              git curl wget unzip zip neovim tmux build-essential \
-              make cmake gcc g++ zsh jq htop tree net-tools file gnupg tzdata
+              git curl wget unzip zip build-essential \
+              make cmake gcc g++ zsh jq htop tree \
+              net-tools file gnupg tzdata neovim tmux \
+              sudo software-properties-common openssh-client
 
       - run:
-          name: 🔣 Install Language Runtimes
+          name: 🎓 Install Language Runtimes
           command: |
             apt-get install -y \
-              python3 python3-pip python3-venv nodejs npm golang-go openjdk-21-jdk default-jdk
+              python3 python3-pip python3-venv \
+              nodejs npm golang-go openjdk-21-jdk \
+              ruby-full default-jdk
 
       - run:
-          name: 🌐 Install Web Stack
+          name: 💪 Install Web Stack
           command: |
-            apt-get install -y nginx mariadb-server redis-server postgresql
+            apt-get install -y \
+              nginx mariadb-server redis-server \
+              postgresql php php-cli php-fpm \
+              mongodb
 
       - run:
-          name: 🤖 Install Python AI/ML (no pip upgrade)
+          name: 🧪 Install Docker + Compose
+          command: |
+            apt-get install -y ca-certificates curl gnupg lsb-release
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+      - run:
+          name: 🔐 Install Security Tools
+          command: |
+            apt-get install -y ufw fail2ban nmap sslscan lynis whois
+
+      - run:
+          name: 📊 Install Python AI/ML
           command: |
             pip3 install --break-system-packages \
               numpy pandas matplotlib scikit-learn \
@@ -56,57 +82,37 @@ jobs:
               transformers torch torchvision
 
       - run:
-          name: 🔧 Generate Config Files
+          name: ⚙️ Setup Config Files + Dummy
           command: |
-            mkdir -p ~/.config/nvim ~/.config/tmux
-            echo "\" Auto-generated config" > ~/.config/nvim/init.vim
-            echo "set number" >> ~/.config/nvim/init.vim
-            echo "# Auto tmux config" > ~/.config/tmux/tmux.conf
-            echo "# .zshrc auto" > ~/.zshrc
+            mkdir -p ~/.config/nvim ~/.config/tmux ~/dummy
+            echo "set number" > ~/.config/nvim/init.vim
+            echo "set -g mouse on" > ~/.config/tmux/tmux.conf
             echo "alias ll='ls -la'" >> ~/.zshrc
-
-            echo "✅ Generated configs:"
-            ls -lah ~/.config/nvim ~/.config/tmux
-            cat ~/.zshrc
+            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=500 || true
 
       - run:
-          name: 🧪 Tambahkan Dummy File (800MB)
+          name: 📦 Compress Snapshot
           command: |
-            mkdir -p ~/dummy
-            dd if=/dev/zero of=~/dummy/filler.bin bs=1M count=800 || true
-            echo "📦 Dummy file created:"
-            ls -lh ~/dummy/filler.bin
+            mkdir -p full-dev-snapshot
+            cp -r ~/.config full-dev-snapshot/config || true
+            cp ~/.zshrc full-dev-snapshot/zshrc || true
+            cp -r ~/dummy full-dev-snapshot/dummy || true
+            echo "$RELEASE_NAME" > full-dev-snapshot/README.txt
+            tar -czf "$TAR_NAME" full-dev-snapshot
 
       - run:
-          name: 🗜️ Compress Snapshot
+          name: 🔢 Cek Ukuran Snapshot
           command: |
-            mkdir -p dev-env-snapshot
-            cp -r ~/.config/nvim dev-env-snapshot/config-nvim || true
-            cp -r ~/.config/tmux dev-env-snapshot/config-tmux || true
-            cp ~/.zshrc dev-env-snapshot/zshrc || true
-            cp -r ~/dummy dev-env-snapshot/fake || true
-            echo "Ubuntu 24.04 Full Dev Snapshot (Lite Mode)" > dev-env-snapshot/README.txt
-
-            echo "📂 Content before compress:"
-            ls -R dev-env-snapshot
-
-            tar -czf ubuntu24-dev-env-lite.tar.gz dev-env-snapshot
-            echo "✅ Compressed as: ubuntu24-dev-env-lite.tar.gz"
-
-      - run:
-          name: 🔍 Verifikasi .tar.gz Sebelum Upload
-          command: |
-            echo "📦 Final file info:"
-            ls -lah
-            ls -lh ubuntu24-dev-env-lite.tar.gz
-            du -h ubuntu24-dev-env-lite.tar.gz
+            ls -lh "$TAR_NAME"
+            du -h "$TAR_NAME"
 
       - store_artifacts:
-          path: ubuntu24-dev-env-lite.tar.gz
-          destination: dev-env-snapshot
+          path: ubuntu24-full-dev-*.tar.gz
+          destination: full-dev-snapshot
 
 workflows:
   version: 2
-  build_and_package:
+  full_build:
     jobs:
-      - ultimate-dev-setup
+      - ubuntu24-full-dev
+
