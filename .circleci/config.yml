@@ -44,10 +44,10 @@ jobs:
               git curl wget unzip zip build-essential \
               make cmake gcc g++ zsh jq htop tree \
               net-tools file gnupg tzdata neovim tmux \
-              sudo software-properties-common openssh-client
+              sudo software-properties-common openssh-client python3-pytest
 
       - run:
-          name: 📚 Install Python + Java + Go + Ruby
+          name: 📚 Install Language Runtimes
           command: |
             apt-get install -y \
               python3 python3-pip python3-venv \
@@ -92,6 +92,16 @@ jobs:
               numpy pandas matplotlib scikit-learn \
               jupyter seaborn opencv-python \
               transformers torch torchvision
+
+      - run:
+          name: 🧪 Dummy Test Run
+          command: |
+            mkdir -p test-results
+            echo 'def test_pass(): assert 1 + 1 == 2' > test_sample.py
+            pytest test_sample.py --junitxml=test-results/results.xml || true
+
+      - store_test_results:
+          path: test-results
 
       - run:
           name: 🧾 Setup Configs + Dummy File
