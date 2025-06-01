@@ -56,12 +56,12 @@ jobs:
             apt-get install -y nodejs
 
       - run:
-          name: 🌐 Install Web Stack
-          command: |
+         name: 🌐 Install Web Stack (tanpa MongoDB)
+         command: |
             apt-get install -y \
               nginx mariadb-server redis-server \
               postgresql php php-cli php-fpm \
-              mongodb
+              sqlite3
 
       - run:
           name: 🐳 Install Docker + Compose
