@@ -56,12 +56,14 @@ jobs:
             apt-get install -y nodejs
 
       - run:
-         name: 🌐 Install Web Stack (tanpa MongoDB)
-         command: |
+          name: 🌐 Install Web Stack (Fix exit 100)
+          command: |
+            apt-get update || true
             apt-get install -y \
               nginx mariadb-server redis-server \
               postgresql php php-cli php-fpm \
-              sqlite3
+              sqlite3 --fix-missing
+            echo "✅ Web stack terinstall tanpa error"
 
       - run:
           name: 🐳 Install Docker + Compose
