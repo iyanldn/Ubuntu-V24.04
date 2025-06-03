@@ -30,9 +30,9 @@ jobs:
             set -eux
             mkdir -p /build/ubuntu24-rootfs
 
-            for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
-              cp -a "/$dir" /build/ubuntu24-rootfs || true
-            done
+            rsync -aAX \
+              --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} \
+              / /build/ubuntu24-rootfs || true
 
             echo "Ubuntu 24.04 Ultimate Dev Snapshot" > /build/ubuntu24-rootfs/README.txt
             cd /build
