@@ -20,8 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🐳 Build Docker Image (Ultimate)
-        run: |
-          docker build -f Dockerfile.ultimate -t ubuntu24-dev-ultimate .
+        run: docker build -f Dockerfile.ultimate -t ubuntu24-dev-ultimate .
 
       - name: 📦 Generate Snapshot
         run: |
@@ -30,10 +29,15 @@ jobs:
           docker run --rm -v ${{ github.workspace }}/rootfs-output:/build ubuntu24-dev-ultimate bash -c '
             set -eux
             mkdir -p /build/ubuntu24-rootfs
-            cp -a /bin /etc /lib /lib64 /sbin /usr /var /opt /root /home /build/ubuntu24-rootfs || true
-            echo "Ubuntu 24.04 Ultimate Snapshot with Dev Tools" > /build/ubuntu24-rootfs/README.txt
+
+            # Copy rootfs excluding special dirs
+            for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
+              cp -a "/$dir" /build/ubuntu24-rootfs || true
+            done
+
+            echo "Ubuntu 24.04 Ultimate Dev Snapshot" > /build/ubuntu24-rootfs/README.txt
             cd /build
-            tar -czf ubuntu24-ultimate.tar.gz ubuntu24-rootfs
+            tar --ignore-failed-read -czf ubuntu24-ultimate.tar.gz ubuntu24-rootfs
             sha256sum ubuntu24-ultimate.tar.gz > sha256.txt
           '
 
@@ -49,5 +53,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ✅ Selesai
-        run: echo "🔥 Build Ubuntu 24.04 ultimate snapshot sukses!"
+      - name: ✅ Done
+        run: echo "🔥 Snapshot Ultimate Ubuntu 24.04 selesai dibuild & diupload!"
