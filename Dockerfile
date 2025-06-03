@@ -15,7 +15,13 @@ RUN apt-get update && \
         docker.io docker-compose && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --break-system-packages \
-    numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python
+# Aktifkan venv saat build
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install \
+        numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python
+
+# (Optional) Tambahkan ke PATH
+ENV PATH="/opt/venv/bin:$PATH"
 
 CMD [ "bash" ]
