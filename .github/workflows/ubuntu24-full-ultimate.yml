@@ -30,7 +30,6 @@ jobs:
             set -eux
             mkdir -p /build/ubuntu24-rootfs
 
-            # Copy rootfs excluding special dirs
             for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
               cp -a "/$dir" /build/ubuntu24-rootfs || true
             done
