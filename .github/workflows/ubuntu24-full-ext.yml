@@ -1,0 +1,53 @@
+name: Ubuntu 24.04 Full Dev Snapshot - EXT (Dockerfile)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-rootfs-dockerfile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build -t ubuntu24-full-dev-ext .
+
+      - name: 📦 Generate Snapshot Rootfs
+        run: |
+          mkdir -p rootfs-output
+
+          docker run --rm -v ${{ github.workspace }}/rootfs-output:/build ubuntu24-full-dev-ext bash -c '
+            set -eux
+            mkdir -p /build/ubuntu24-rootfs
+            cp -a /bin /etc /lib /lib64 /sbin /usr /var /opt /root /home /build/ubuntu24-rootfs || true
+            echo "Ubuntu 24.04 EXT Snapshot with Dev Tools" > /build/ubuntu24-rootfs/README.txt
+            cd /build
+            tar -czf ubuntu24-full-ext.tar.gz ubuntu24-rootfs
+            sha256sum ubuntu24-full-ext.tar.gz > sha256.txt
+          '
+
+      - name: ☁️ Upload ke GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v24.04-full-ext
+          name: Ubuntu 24.04 Full Dev Snapshot (Dockerfile)
+          files: |
+            rootfs-output/ubuntu24-full-ext.tar.gz
+            rootfs-output/sha256.txt
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Done
+        run: echo "🔥 Build selesai dan snapshot telah diupload ke Release!"
