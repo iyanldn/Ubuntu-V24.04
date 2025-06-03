@@ -1,0 +1,49 @@
+name: Ubuntu 24.04 Ultimate Snapshot to Google Drive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-upload-gdrive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build Docker Image (Ultimate)
+        run: docker build -f Dockerfile.ultimate -t ubuntu24-ultimate .
+
+      - name: 📦 Generate Rootfs Snapshot
+        run: |
+          mkdir -p rootfs-output
+
+          docker run --rm -v ${{ github.workspace }}/rootfs-output:/build ubuntu24-ultimate bash -c '
+            set -eux
+            mkdir -p /build/ubuntu24-rootfs
+            for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
+              cp -a "/$dir" /build/ubuntu24-rootfs || true
+            done
+            echo "Ubuntu 24.04 Ultimate Snapshot" > /build/ubuntu24-rootfs/README.txt
+            cd /build
+            tar --ignore-failed-read -czf ubuntu24-ultimate.tar.gz ubuntu24-rootfs
+            sha256sum ubuntu24-ultimate.tar.gz > sha256.txt
+          '
+
+      - name: 📦 Install Rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: 📤 Upload to Google Drive
+        env:
+          RCLONE_CONFIG_GDRIVE: ${{ secrets.RCLONE_CONFIG_GDRIVE }}
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${RCLONE_CONFIG_GDRIVE}" > ~/.config/rclone/rclone.conf
+          rclone copy rootfs-output/ MyDrive:Ubuntu24-Snapshots --progress
+
+      - name: ✅ Done
+        run: echo "🚀 Snapshot Ubuntu 24.04 Ultimate telah diupload ke Google Drive!"
