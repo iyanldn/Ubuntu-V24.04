@@ -31,13 +31,15 @@ jobs:
             mkdir -p /build/ubuntu24-rootfs
 
             rsync -aAX \
-              --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} \
+              --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/var/cache/*","/var/log/*","/var/lib/docker/*"} \
               / /build/ubuntu24-rootfs || true
 
             echo "Ubuntu 24.04 Ultimate Dev Snapshot" > /build/ubuntu24-rootfs/README.txt
+
             cd /build
-            tar --ignore-failed-read -czf ubuntu24-ultimate.tar.gz ubuntu24-rootfs
-            sha256sum ubuntu24-ultimate.tar.gz > sha256.txt
+            tar --ignore-failed-read -czf /tmp/ubuntu24-ultimate.tar.gz ubuntu24-rootfs
+            sha256sum /tmp/ubuntu24-ultimate.tar.gz > sha256.txt
+            mv /tmp/ubuntu24-ultimate.tar.gz /build/
           '
 
       - name: ☁️ Upload ke GitHub Release

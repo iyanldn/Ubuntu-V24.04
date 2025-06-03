@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs npm openjdk-21-jdk golang-go ruby-full \
     nginx mariadb-server postgresql \
     ufw fail2ban nmap lynis whois supervisor \
-    ca-certificates pipx rsync && \
+    ca-certificates pipx && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN pipx ensurepath && pipx install poetry
