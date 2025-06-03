@@ -4,16 +4,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Makassar
 ENV NVM_DIR=/root/.nvm
 
-# 🛠️ Install core + dev tools
+# 🛠️ Core + dev tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget git zsh unzip zip htop tree sudo tzdata gnupg lsb-release \
-    build-essential cmake gcc g++ make neovim tmux \
+    build-essential cmake gcc g++ make tmux \
     python3 python3-pip python3-venv \
     nodejs npm \
     nginx postgresql \
     ufw fail2ban nmap lynis whois \
     pipx && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 🔁 Neovim v0.10.0 (Manual)
+RUN curl -LO https://github.com/neovim/neovim/releases/download/v0.10.0/nvim-linux64.tar.gz && \
+    tar -xzf nvim-linux64.tar.gz && \
+    mv nvim-linux64 /opt/nvim && \
+    ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim && \
+    rm -f nvim-linux64.tar.gz
 
 # 🔁 pipx + poetry
 RUN pipx ensurepath && pipx install poetry
@@ -26,7 +33,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | b
 RUN pip3 install --break-system-packages \
     numpy pandas matplotlib scikit-learn jupyter seaborn
 
-# 🔧 Dotfiles
+# Dotfiles
 RUN echo "alias ll='ls -la'" >> /root/.zshrc && \
     echo "set -g mouse on" > /root/.tmux.conf && \
     mkdir -p /root/.config/nvim && echo "set number" > /root/.config/nvim/init.vim
