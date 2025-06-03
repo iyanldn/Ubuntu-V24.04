@@ -1,14 +1,12 @@
-name: Ubuntu 24.04 Rootfs Snapshot - Ultimate (Dockerfile)
+name: Ubuntu 24.04 Rootfs Snapshot - Ultimate Split (Dockerfile)
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
     paths:
       - 'Dockerfile.ultimate'
       - '.github/workflows/**'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,7 +22,7 @@ jobs:
       - name: 🐳 Build Docker Image (Ultimate)
         run: docker build -f Dockerfile.ultimate -t ubuntu24-dev-ultimate .
 
-      - name: 📦 Generate Rootfs Snapshot
+      - name: 📦 Generate & Split Rootfs Snapshot
         run: |
           mkdir -p rootfs-output
 
@@ -36,8 +34,13 @@ jobs:
             done
             echo "Ubuntu 24.04 Ultimate Dev Snapshot" > /build/ubuntu24-rootfs/README.txt
             cd /build
+
+            # Compress full archive
             tar --ignore-failed-read -czf ubuntu24-ultimate.tar.gz ubuntu24-rootfs
             sha256sum ubuntu24-ultimate.tar.gz > sha256.txt
+
+            # Split into 1900MB chunks
+            split -b 1900M ubuntu24-ultimate.tar.gz ubuntu24-ultimate.tar.gz.part.
           '
 
       - name: 📦 Install rclone
@@ -49,7 +52,7 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
           echo "$RCLONE_CONFIG_GDRIVE" > ~/.config/rclone/rclone.conf
-          rclone copy rootfs-output/ MyDrive:Ubuntu24-Snapshots --progress
+          rclone copy rootfs-output/ gdrive:Ubuntu24-Snapshots/Ultimate --progress
 
       - name: ✅ Done
         run: echo "🔥 Snapshot Ubuntu 24.04 Ultimate telah diupload ke Google Drive!"
