@@ -1,33 +1,41 @@
-name: Ubuntu 24.04 Medium Clean - Release Builder
+name: Ubuntu 24.04 Rootfs Snapshot - Medium-Clean (No Hardlink)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ubuntu24-rootfs/**'
+      - '.github/workflows/ubuntu24-dev-medium-clean.yml'
 
 permissions:
   contents: write
 
 jobs:
-  build-release:
+  build-rootfs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 📥 Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Compress Clean Snapshot
+      - name: 📦 Generate Clean Snapshot
         run: |
           mkdir -p release-output
           zip -r release-output/ubuntu24-dev-medium-clean.zip ubuntu24-rootfs
           sha256sum release-output/ubuntu24-dev-medium-clean.zip > release-output/sha256.txt
 
-      - name: Upload to GitHub Release
+      - name: ☁️ Upload ke GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v24.04-dev-medium-clean
-          name: Ubuntu 24.04 Medium Clean (No Hardlink)
+          name: Ubuntu 24.04 Rootfs Snapshot (Medium Clean)
           files: |
             release-output/ubuntu24-dev-medium-clean.zip
             release-output/sha256.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Done
+        run: echo "🎉 Clean Snapshot berhasil dibuild & diupload!"
