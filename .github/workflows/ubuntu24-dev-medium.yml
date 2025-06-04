@@ -1,53 +1,33 @@
-name: Ubuntu 24.04 Rootfs Snapshot - Medium-High (Dockerfile)
+name: Ubuntu 24.04 Medium Clean - Release Builder
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-    paths:
-      - 'Dockerfile.medium'
-      - '.github/workflows/**'
 
 permissions:
   contents: write
 
 jobs:
-  build-rootfs:
+  build-release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐳 Build Docker Image (Medium)
-        run: docker build -f Dockerfile.medium -t ubuntu24-dev-medium .
-
-      - name: 📦 Generate Snapshot
+      - name: Compress Clean Snapshot
         run: |
-          mkdir -p rootfs-output
-          docker run --rm -v ${{ github.workspace }}/rootfs-output:/build ubuntu24-dev-medium bash -c '
-            set -eux
-            mkdir -p /build/ubuntu24-rootfs
-            for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
-              cp -a "/$dir" /build/ubuntu24-rootfs || true
-            done
-            echo "Ubuntu 24.04 Medium Dev Snapshot" > /build/ubuntu24-rootfs/README.txt
-            cd /build
-            tar --ignore-failed-read -czf ubuntu24-dev-medium.tar.gz ubuntu24-rootfs
-            sha256sum ubuntu24-dev-medium.tar.gz > sha256.txt
-          '
+          mkdir -p release-output
+          zip -r release-output/ubuntu24-dev-medium-clean.zip ubuntu24-rootfs
+          sha256sum release-output/ubuntu24-dev-medium-clean.zip > release-output/sha256.txt
 
-      - name: ☁️ Upload ke GitHub Release
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v24.04-dev-medium
-          name: Ubuntu 24.04 Rootfs Snapshot (Medium-High)
+          tag_name: v24.04-dev-medium-clean
+          name: Ubuntu 24.04 Medium Clean (No Hardlink)
           files: |
-            rootfs-output/ubuntu24-dev-medium.tar.gz
-            rootfs-output/sha256.txt
+            release-output/ubuntu24-dev-medium-clean.zip
+            release-output/sha256.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: ✅ Done
-        run: echo "🔥 Snapshot Medium Dev Ubuntu 24.04 berhasil dibuild & diupload!"
