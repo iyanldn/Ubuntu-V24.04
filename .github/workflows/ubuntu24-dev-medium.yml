@@ -18,12 +18,12 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔽 Download Ubuntu 24.04 LTS (Noble Numbat) Rootfs (LXC Verified)
+      - name: 🔽 Download Ubuntu 24.04 LTS (Noble Numbat) Rootfs (LXC Latest)
         run: |
           mkdir -p ubuntu24-rootfs
           cd ubuntu24-rootfs
-          echo "📦 Downloading verified Ubuntu 24.04 rootfs (ARM64)..."
-          wget -v https://images.linuxcontainers.org/images/ubuntu/noble/arm64/default/20241007_07:42/rootfs.tar.xz -O rootfs.tar.xz
+          echo "📦 Downloading Ubuntu 24.04 rootfs (ARM64, latest)..."
+          wget -v https://images.linuxcontainers.org/images/ubuntu/noble/arm64/default/latest/rootfs.tar.xz -O rootfs.tar.xz
 
           echo "✅ Download complete. Extracting..."
           if ! tar -xJf rootfs.tar.xz; then
