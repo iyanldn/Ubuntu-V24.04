@@ -1,40 +1,70 @@
-name: Ubuntu 24.04 Rootfs Snapshot - Medium-Clean (No Hardlink)
+name: 🐧 Ubuntu 24.04 + Start Script Builder
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-    paths:
-      - 'ubuntu24-rootfs/**'
-      - '.github/workflows/ubuntu24-dev-medium-clean.yml'
 
 permissions:
   contents: write
 
 jobs:
-  build-rootfs:
+  build-ubuntu:
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout Repo
         uses: actions/checkout@v4
 
-      - name: 📦 Generate Clean Snapshot
+      - name: 🔽 Download Ubuntu 24.04 Rootfs
+        run: |
+          mkdir -p ubuntu24-rootfs
+          cd ubuntu24-rootfs
+          echo "📦 Downloading Ubuntu 24.04 ARM64 rootfs..."
+          wget -q https://partner-images.canonical.com/core/noble/current/ubuntu-noble-core-cloudimg-arm64-root.tar.gz
+          tar -xzf ubuntu-noble-core-cloudimg-arm64-root.tar.gz
+          rm ubuntu-noble-core-cloudimg-arm64-root.tar.gz
+          echo "✅ Rootfs extracted."
+
+      - name: ⚙️ Generate Start Script
+        run: |
+          cat > start-ubuntu.sh << 'EOF'
+          #!/data/data/com.termux/files/usr/bin/bash
+          cd $(dirname $0)
+          unset LD_PRELOAD
+          proot --link2symlink -0 \
+            -r ubuntu24-rootfs \
+            -b /dev -b /proc -b /sys -b /data/data/com.termux/files/home:/root \
+            -w /root /usr/bin/env -i \
+            HOME=/root TERM=$TERM LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin \
+            /bin/bash --login
+          EOF
+          chmod +x start-ubuntu.sh
+          echo "✅ start-ubuntu.sh generated!"
+
+      - name: 🗜️ Compress Files
         run: |
           mkdir -p release-output
-          zip -r release-output/ubuntu24-dev-medium-clean.zip ubuntu24-rootfs
-          sha256sum release-output/ubuntu24-dev-medium-clean.zip > release-output/sha256.txt
+          tar -cf - ubuntu24-rootfs | xz -9 -T0 > release-output/ubuntu24-rootfs.tar.xz
+          cp start-ubuntu.sh release-output/
+          sha256sum release-output/* > release-output/SHA256SUMS.txt
 
       - name: ☁️ Upload ke GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v24.04-dev-medium-clean
-          name: Ubuntu 24.04 Rootfs Snapshot (Medium Clean)
+          tag_name: v24.04-proot
+          name: Ubuntu 24.04 Rootfs + Start Script
           files: |
-            release-output/ubuntu24-dev-medium-clean.zip
-            release-output/sha256.txt
+            release-output/ubuntu24-rootfs.tar.xz
+            release-output/start-ubuntu.sh
+            release-output/SHA256SUMS.txt
           generate_release_notes: true
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Done
+        run: |
+          echo "🎉 Build complete!"
+          echo "🔗 Release ready at:"
+          echo "https://github.com/${{ github.repository }}/releases/tag/v24.04-proot"        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: ✅ Done
