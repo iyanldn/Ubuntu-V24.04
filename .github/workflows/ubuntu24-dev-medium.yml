@@ -1,4 +1,4 @@
-name: 🐧 Ubuntu 24.04 Rootfs + Termux Launcher Builder (Final Stable)
+name: 🐧 Ubuntu 24.04 Rootfs Builder (Ultimate Auto Snapshot + Termux Launcher)
 
 on:
   workflow_dispatch:
@@ -18,28 +18,28 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔽 Download Ubuntu 24.04 LTS (Noble Numbat) Rootfs (LXC latest)
+      - name: 🔽 Download Ubuntu 24.04 LTS (Noble Numbat) Rootfs (LXC Verified)
         run: |
           mkdir -p ubuntu24-rootfs
           cd ubuntu24-rootfs
-          echo "📦 Downloading Ubuntu 24.04 (LXC latest rootfs)..."
-          wget -v https://images.linuxcontainers.org/images/ubuntu/noble/arm64/default/latest/rootfs.tar.xz -O rootfs.tar.xz
+          echo "📦 Downloading verified Ubuntu 24.04 rootfs (ARM64)..."
+          wget -v https://images.linuxcontainers.org/images/ubuntu/noble/arm64/default/20241007_07:42/rootfs.tar.xz -O rootfs.tar.xz
 
           echo "✅ Download complete. Extracting..."
           if ! tar -xJf rootfs.tar.xz; then
             echo "❌ Extraction failed!"
+            ls -lh
             exit 1
           fi
-
           rm rootfs.tar.xz
-          echo "✅ Ubuntu 24.04 LXC Rootfs extracted successfully!"
+          echo "✅ Ubuntu 24.04 LTS Rootfs extracted successfully!"
 
       - name: ⚙️ Generate Termux Launcher Script
         run: |
+          echo "🛠️ Generating Termux launcher script..."
           cat > start-ubuntu.sh << 'EOF'
           #!/data/data/com.termux/files/usr/bin/bash
           cd $(dirname $0)
-          unset LD_PRELOAD
           proot --link2symlink -0 \
             -r ubuntu24-rootfs \
             -b /dev -b /proc -b /sys \
@@ -63,8 +63,8 @@ jobs:
       - name: ☁️ Upload ke GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v24.04-lts-rootfs
-          name: Ubuntu 24.04 LTS Rootfs + Termux Launcher
+          tag_name: v24.04-lts-${{ github.run_number }}
+          name: Ubuntu 24.04 LTS Rootfs (Termux Ready Build #${{ github.run_number }})
           files: |
             release-output/ubuntu24-noble-arm64-rootfs.tar.xz
             release-output/start-ubuntu.sh
@@ -73,95 +73,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ✅ Done
-        run: |
-          echo "🎉 Ubuntu 24.04 LTS Rootfs + Termux Launcher berhasil dibuild & diupload!"
-          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v24.04-lts-rootfs"      - name: ⚙️ Generate Termux Launcher Script
-        run: |
-          cat > start-ubuntu.sh << 'EOF'
-          #!/data/data/com.termux/files/usr/bin/bash
-          cd $(dirname $0)
-          unset LD_PRELOAD
-          proot --link2symlink -0 \
-            -r ubuntu24-rootfs \
-            -b /dev -b /proc -b /sys \
-            -b /data/data/com.termux/files/home:/root \
-            -w /root /usr/bin/env -i \
-            HOME=/root TERM=$TERM LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin \
-            /bin/bash --login
-          EOF
-          chmod +x start-ubuntu.sh
-          echo "✅ start-ubuntu.sh generated!"
-
-      - name: 🗜️ Compress Rootfs (XZ)
-        run: |
-          mkdir -p release-output
-          echo "📦 Compressing rootfs (this may take a few minutes)..."
-          tar -cf - ubuntu24-rootfs | xz -9 -T0 > release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-          cp start-ubuntu.sh release-output/
-          sha256sum release-output/* > release-output/SHA256SUMS.txt
-          echo "✅ Compression & checksum complete."
-
-      - name: ☁️ Upload ke GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: 📤 Upload Build Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v24.04-lts-rootfs
-          name: Ubuntu 24.04 LTS Rootfs + Termux Launcher
-          files: |
-            release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-            release-output/start-ubuntu.sh
-            release-output/SHA256SUMS.txt
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: ubuntu24-rootfs-output
+          path: release-output/
 
       - name: ✅ Done
         run: |
-          echo "🎉 Ubuntu 24.04 LTS Rootfs + Termux Launcher berhasil dibuild & diupload!"
-          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v24.04-lts-rootfs"            exit 1
-          fi
-          rm rootfs.tar.xz
-          echo "✅ Ubuntu 24.04 Rootfs extracted successfully."
-
-      - name: 🗜️ Compress Rootfs (XZ)
-        run: |
-          mkdir -p release-output
-          echo "📦 Compressing rootfs (this may take a few minutes)..."
-          tar -cf - ubuntu24-rootfs | xz -9 -T0 > release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-          sha256sum release-output/ubuntu24-noble-arm64-rootfs.tar.xz > release-output/SHA256SUMS.txt
-          echo "✅ Compression & checksum complete."
-
-      - name: ☁️ Upload ke GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v24.04-lts-rootfs
-          name: Ubuntu 24.04 LTS Rootfs (Noble Numbat)
-          files: |
-            release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-            release-output/SHA256SUMS.txt
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: ✅ Done
-        run: |
-          echo "🎉 Ubuntu 24.04 LTS Rootfs Snapshot berhasil dibuild & diupload!"
-          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v24.04-lts-rootfs"          sha256sum release-output/ubuntu24-noble-arm64-rootfs.tar.xz > release-output/SHA256SUMS.txt
-          echo "✅ Compression & checksum done."
-
-      - name: ☁️ Upload ke GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v24.04-lts-rootfs
-          name: Ubuntu 24.04 LTS Rootfs (Noble Numbat)
-          files: |
-            release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-            release-output/SHA256SUMS.txt
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: ✅ Done
-        run: |
-          echo "🎉 Ubuntu 24.04 LTS Rootfs Snapshot berhasil dibuild & diupload!"
-          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v24.04-lts-rootfs"
+          echo "🎉 Ubuntu 24.04 LTS Rootfs + Termux Launcher build complete!"
+          echo "🔗 Check release here: https://github.com/${{ github.repository }}/releases"
