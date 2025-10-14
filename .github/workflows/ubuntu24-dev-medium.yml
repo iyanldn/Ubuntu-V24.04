@@ -23,7 +23,7 @@ jobs:
           mkdir -p ubuntu24-rootfs
           cd ubuntu24-rootfs
           echo "📦 Downloading rootfs from Canonical mirror..."
-          wget -q https://partner-images.canonical.com/core/noble/current/ubuntu-noble-core-cloudimg-arm64-root.tar.gz
+          wget -q https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64-root.tar.xz
           echo "📂 Extracting..."
           tar -xzf ubuntu-noble-core-cloudimg-arm64-root.tar.gz
           rm ubuntu-noble-core-cloudimg-arm64-root.tar.gz
