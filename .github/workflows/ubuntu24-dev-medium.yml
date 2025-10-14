@@ -1,4 +1,4 @@
-name: 🐧 Ubuntu 24.04 Rootfs Builder (Auto Snapshot)
+name: 🐧 Ubuntu 24.04 Rootfs Builder (Auto Snapshot, Verified)
 
 on:
   workflow_dispatch:
@@ -22,19 +22,47 @@ jobs:
         run: |
           mkdir -p ubuntu24-rootfs
           cd ubuntu24-rootfs
-          echo "📦 Downloading rootfs from Canonical mirror..."
-          wget -q https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64-root.tar.xz
-          echo "📂 Extracting..."
-          tar -xzf ubuntu-noble-core-cloudimg-arm64-root.tar.gz
-          rm ubuntu-noble-core-cloudimg-arm64-root.tar.gz
-          echo "✅ Ubuntu 24.04 Rootfs extracted."
+          echo "📦 Downloading Ubuntu 24.04 (ARM64) rootfs from Canonical..."
+          wget -v https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64-root.tar.xz -O rootfs.tar.xz
+
+          echo "✅ Download complete. Checking file..."
+          if [ ! -f rootfs.tar.xz ]; then
+            echo "❌ Download failed — file not found!"
+            exit 1
+          fi
+
+          echo "📂 Extracting rootfs..."
+          if ! tar -xJf rootfs.tar.xz; then
+            echo "❌ Extraction failed!"
+            exit 1
+          fi
+          rm rootfs.tar.xz
+          echo "✅ Ubuntu 24.04 Rootfs extracted successfully."
 
       - name: 🗜️ Compress Rootfs (XZ)
         run: |
           mkdir -p release-output
-          echo "📦 Compressing with XZ (this may take a few minutes)..."
+          echo "📦 Compressing rootfs (this may take a few minutes)..."
           tar -cf - ubuntu24-rootfs | xz -9 -T0 > release-output/ubuntu24-noble-arm64-rootfs.tar.xz
           sha256sum release-output/ubuntu24-noble-arm64-rootfs.tar.xz > release-output/SHA256SUMS.txt
+          echo "✅ Compression & checksum complete."
+
+      - name: ☁️ Upload ke GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v24.04-lts-rootfs
+          name: Ubuntu 24.04 LTS Rootfs (Noble Numbat)
+          files: |
+            release-output/ubuntu24-noble-arm64-rootfs.tar.xz
+            release-output/SHA256SUMS.txt
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Done
+        run: |
+          echo "🎉 Ubuntu 24.04 LTS Rootfs Snapshot berhasil dibuild & diupload!"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/v24.04-lts-rootfs"          sha256sum release-output/ubuntu24-noble-arm64-rootfs.tar.xz > release-output/SHA256SUMS.txt
           echo "✅ Compression & checksum done."
 
       - name: ☁️ Upload ke GitHub Release
