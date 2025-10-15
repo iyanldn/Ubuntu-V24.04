@@ -1,95 +1,87 @@
-name: 🐧 Ubuntu 24.04 Rootfs Builder (Hybrid Auto Snapshot + Termux Ready)
+name: Ubuntu Rolling Rootfs Snapshot - Ultimate (Auto Weekly)
 
 on:
-  workflow_dispatch:
   push:
     branches: [main, master]
     paths:
-      - '.github/workflows/ubuntu24-auto-rootfs.yml'
+      - 'Dockerfile.ultimate.rolling'
+      - '.github/workflows/**'
+  schedule:
+    - cron: "0 0 * * 0"   # tiap Minggu 00:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-ubuntu-rootfs:
+  build-rootfs-rolling:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: 📥 Checkout Repo
         uses: actions/checkout@v4
 
-      - name: 🔽 Download Ubuntu 24.04 Rootfs (Try LXC → fallback Andronix)
+      - name: 🕓 Generate Tag Name (Auto)
+        id: tag
         run: |
-          mkdir -p ubuntu24-rootfs
-          cd ubuntu24-rootfs
+          DATE_TAG=$(date +'%Y%m%d-%H%M%S')
+          echo "TAG_NAME=rolling-${DATE_TAG}" >> $GITHUB_ENV
+          echo "✅ Generated tag: rolling-${DATE_TAG}"
 
-          echo "📦 Trying to download from LXC mirror..."
-          LXC_URL="https://images.linuxcontainers.org/images/ubuntu/noble/arm64/default/latest/rootfs.tar.xz"
-          FALLBACK_URL="https://raw.githubusercontent.com/AndronixApp/AndronixOrigin/main/Rootfs/Ubuntu24.tar.xz"
+      - name: 🧹 Delete Old Releases
+        uses: dev-drprasad/delete-older-releases@v0.3.3
+        with:
+          keep_latest: 1
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          if wget -v --tries=2 "$LXC_URL" -O rootfs.tar.xz; then
-            echo "✅ Downloaded from LXC mirror!"
-          else
-            echo "⚠️ LXC mirror failed! Trying fallback from Andronix..."
-            wget -v "$FALLBACK_URL" -O rootfs.tar.xz || (echo "❌ Both sources failed! Exiting."; exit 1)
-          fi
+      - name: 🐳 Build Docker Image (Rolling)
+        run: docker build -f Dockerfile.ultimate.rolling -t ubuntu-rolling-ultimate .
 
-          echo "📂 Extracting rootfs..."
-          if ! tar -xJf rootfs.tar.xz; then
-            echo "❌ Extraction failed!"
-            ls -lh
-            exit 1
-          fi
-
-          rm rootfs.tar.xz
-          echo "✅ Ubuntu 24.04 Rootfs extracted successfully!"
-
-      - name: ⚙️ Generate Termux Launcher Script
+      - name: 📦 Generate Rootfs Snapshot
         run: |
-          echo "🛠️ Generating Termux launcher script..."
-          cat > start-ubuntu.sh << 'EOF'
-          #!/data/data/com.termux/files/usr/bin/bash
-          cd $(dirname $0)
-          proot --link2symlink -0 \
-            -r ubuntu24-rootfs \
-            -b /dev -b /proc -b /sys \
-            -b /data/data/com.termux/files/home:/root \
-            -w /root /usr/bin/env -i \
-            HOME=/root TERM=$TERM LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin \
-            /bin/bash --login
-          EOF
-          chmod +x start-ubuntu.sh
-          echo "✅ start-ubuntu.sh generated!"
+          mkdir -p rootfs-output
+          docker run --rm -v ${{ github.workspace }}/rootfs-output:/build ubuntu-rolling-ultimate bash -c '
+            set -eux
+            mkdir -p /build/ubuntu-rootfs
 
-      - name: 🗜️ Compress Rootfs (XZ)
-        run: |
-          mkdir -p release-output
-          echo "📦 Compressing rootfs (this may take a few minutes)..."
-          tar -cf - ubuntu24-rootfs | xz -9 -T0 > release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-          cp start-ubuntu.sh release-output/
-          sha256sum release-output/* > release-output/SHA256SUMS.txt
-          echo "✅ Compression & checksum complete."
+            for dir in bin boot etc home lib lib64 opt root sbin srv usr var; do
+              if [ -d "/$dir" ]; then cp -a "/$dir" /build/ubuntu-rootfs/; fi
+            done
 
-      - name: ☁️ Upload ke GitHub Release
+            echo "Ubuntu Rolling Ultimate Snapshot - Built on $(date)" > /build/ubuntu-rootfs/README.txt
+            cd /build
+            tar -czf ubuntu-rolling-ultimate.tar.gz ubuntu-rootfs || true
+            sha256sum ubuntu-rolling-ultimate.tar.gz > sha256.txt
+          '
+
+      - name: ☁️ Upload ke GitHub Release (Auto Tag)
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v24.04-lts-${{ github.run_number }}
-          name: Ubuntu 24.04 LTS Rootfs (Hybrid Build #${{ github.run_number }})
+          tag_name: ${{ env.TAG_NAME }}
+          name: "Ubuntu Rolling Rootfs (Ultimate) - ${{ env.TAG_NAME }}"
           files: |
-            release-output/ubuntu24-noble-arm64-rootfs.tar.xz
-            release-output/start-ubuntu.sh
-            release-output/SHA256SUMS.txt
+            rootfs-output/ubuntu-rolling-ultimate.tar.gz
+            rootfs-output/sha256.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📤 Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ubuntu24-rootfs-output
-          path: release-output/
-
-      - name: ✅ Done
+      - name: 🪣 Push Snapshot ke Branch "snapshots"
         run: |
-          echo "🎉 Ubuntu 24.04 LTS Rootfs + Termux Launcher built successfully!"
-          echo "🔗 Check release here: https://github.com/${{ github.repository }}/releases"
+          SNAPSHOT_BRANCH="snapshots"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin
+          git checkout -B $SNAPSHOT_BRANCH origin/$SNAPSHOT_BRANCH || git checkout -b $SNAPSHOT_BRANCH
+
+          mkdir -p snapshots/${{ env.TAG_NAME }}
+          cp rootfs-output/* snapshots/${{ env.TAG_NAME }}/
+
+          git add snapshots/
+          git commit -m "📦 Rolling Snapshot update: ${{ env.TAG_NAME }}" || echo "No changes to commit"
+          git push origin $SNAPSHOT_BRANCH --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
