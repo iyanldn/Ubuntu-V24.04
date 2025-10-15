@@ -3,9 +3,7 @@ FROM ubuntu:latest
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Makassar
 ENV NVM_DIR=/root/.nvm
-ENV PATH=$PATH:/root/.local/bin
 
-# --- Base Dependencies ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget git zsh unzip zip htop tree sudo tzdata gnupg lsb-release \
     build-essential cmake gcc g++ make neovim tmux \
@@ -16,32 +14,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates pipx && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- Pipx & Poetry ---
-RUN pipx ensurepath && \
-    bash -c "source ~/.bashrc && pipx install poetry"
+# Pipx & Poetry
+RUN pipx ensurepath && pipx install poetry
 
-# --- NVM + Node LTS + PM2 ---
-RUN curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
-    bash -c ". \"$NVM_DIR/nvm.sh\" && nvm install --lts && npm install -g pm2" && \
-    ln -sf /root/.nvm/versions/node/*/bin/node /usr/local/bin/node && \
-    ln -sf /root/.nvm/versions/node/*/bin/npm /usr/local/bin/npm && \
-    ln -sf /root/.nvm/versions/node/*/bin/pm2 /usr/local/bin/pm2
+# NVM + PM2
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
+    bash -c ". \"$NVM_DIR/nvm.sh\" && nvm install --lts && npm i -g pm2"
 
-# --- Python AI/ML Stack ---
-RUN pip3 install --break-system-packages -U \
+# Python AI/ML
+RUN pip3 install --break-system-packages \
     numpy pandas matplotlib scikit-learn jupyter seaborn opencv-python \
     transformers torch torchvision
 
-# --- Dotfiles & Aliases ---
+# Dotfiles & Aliases
 RUN echo "alias ll='ls -la'" >> /root/.zshrc && \
     echo "set -g mouse on" > /root/.tmux.conf && \
     mkdir -p /root/.config/nvim && echo "set number" > /root/.config/nvim/init.vim
 
-# --- Dev User ---
-RUN useradd -m -s /bin/bash devuser && \
-    echo "devuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Dev User
+RUN useradd -m -s /bin/bash devuser && echo "devuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# --- Optional Root Password ---
 RUN echo "root:toor" | chpasswd
 
 WORKDIR /root
